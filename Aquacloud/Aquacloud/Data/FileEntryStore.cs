@@ -139,8 +139,8 @@ namespace Aquacloud.Data
 					CloudBlobClient cloudBlobClient = storageAccount.CreateCloudBlobClient();
 
 					// Create a container called 'quickstartblobs' and append a GUID value to it to make the name unique. 
-					cloudBlobContainer = cloudBlobClient.GetContainerReference("quickstartblobs" + Guid.NewGuid().ToString());
-					await cloudBlobContainer.CreateAsync();
+					cloudBlobContainer = cloudBlobClient.GetContainerReference("documents");
+					//await cloudBlobContainer.CreateAsync();
 
 					// Set the permissions so the blobs are public. 
 					BlobContainerPermissions permissions = new BlobContainerPermissions
