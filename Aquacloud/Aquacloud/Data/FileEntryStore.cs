@@ -5,6 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Blob;
+
 
 namespace Aquacloud.Data
 {
@@ -13,11 +16,12 @@ namespace Aquacloud.Data
 		List<NoteEntry> loadedNotes;
 		string filename;
 
-		public FileEntryStore() {
+		public FileEntryStore()
+		{
 			string folder = Environment.GetFolderPath(Environment.SpecialFolder.InternetCache);
 			if (string.IsNullOrEmpty(folder))
 				folder = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-			this.filename = Path.Combine(folder, "minutes.xml");
+			this.filename = Path.Combine(folder, "minutes2.xml");
 		}
 
 		private async Task InitializeAsync()
@@ -119,6 +123,45 @@ namespace Aquacloud.Data
 			{
 				await writer.WriteAsync(root.ToString()).ConfigureAwait(false);
 			}
+
+			CloudStorageAccount storageAccount = null;
+			CloudBlobContainer cloudBlobContainer = null;
+
+			//string storageConnectionString = Environment.GetEnvironmentVariable("storageconnectionstring");
+			string storageConnectionString = "DefaultEndpointsProtocol=https;AccountName=centralupload;AccountKey=ojtXJVDJNNveH3knEvOh1ZLAKnTyhsQZLaSbbB0XmvMSHD4xJUAzuLZCXjlBr05aoVzYix4EQUdaMHx+W4fCAg==;EndpointSuffix=core.windows.net";
+
+			// Check whether the connection string can be parsed.
+			if (CloudStorageAccount.TryParse(storageConnectionString, out storageAccount))
+			{
+				try
+				{
+					// Create the CloudBlobClient that represents the Blob storage endpoint for the storage account.
+					CloudBlobClient cloudBlobClient = storageAccount.CreateCloudBlobClient();
+
+					// Create a container called 'quickstartblobs' and append a GUID value to it to make the name unique. 
+					cloudBlobContainer = cloudBlobClient.GetContainerReference("quickstartblobs" + Guid.NewGuid().ToString());
+					await cloudBlobContainer.CreateAsync();
+
+					// Set the permissions so the blobs are public. 
+					BlobContainerPermissions permissions = new BlobContainerPermissions
+					{
+						PublicAccess = BlobContainerPublicAccessType.Blob
+					};
+					await cloudBlobContainer.SetPermissionsAsync(permissions);
+
+					string localFileName = "QuickStart_" + Guid.NewGuid().ToString() + ".txt";
+
+					// Get a reference to the blob address, then upload the file to the blob.
+					// Use the value of localFileName for the blob name.
+					CloudBlockBlob cloudBlockBlob = cloudBlobContainer.GetBlockBlobReference(localFileName);
+					await cloudBlockBlob.UploadFromFileAsync(filename);
+
+				}
+				catch (StorageException ex)
+				{
+					Console.WriteLine("Error returned from the service: {0}", ex.Message);
+				}
+			}
 		}
 	}
-}
+} 
